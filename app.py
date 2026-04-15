@@ -76,8 +76,6 @@ def process_and_forward():
             "final_prompt": precise_prompt,
             "status": "ready",
             "metadata": {
-                "customer": customer_name,
-                "reason": reason,
                 "raw_data_received": data # שומרים את הנתונים המקוריים לגיבוי
             },
             "generation_response": precise_prompt
