@@ -59,7 +59,7 @@ def process_and_forward():
         }
 
         model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash',
+            model_name="gemini-3-flash-preview",
             generation_config=generation_config
         )
 
