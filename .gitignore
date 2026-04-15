@@ -1,0 +1,24 @@
+# --- Python ---
+venv/
+.venv/
+__pycache__/
+*.pyc
+.python-version
+
+# --- Environment Variables (חשוב מאוד!) ---
+.env
+.env.local
+
+# --- Node / React ---
+node_modules/
+dist/
+build/
+.eslintcache
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
+
+# --- IDEs ---
+.vscode/
+.idea/
