@@ -58,10 +58,15 @@ def process_and_forward():
             "max_output_tokens": 4096,
         }
 
+        # model = genai.GenerativeModel(
+        #     model_name="gemini-1.5-flash",
+        #     generation_config=generation_config
+        # )
+
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            generation_config=generation_config
-        )
+        model_name="gemini-1.5-flash", # זה תמיד עובד
+       generation_config=generation_config
+      )
 
         # 4. יצירת הפרומפט המדויק באמצעות Gemini
         response = model.generate_content(meta_prompt)
