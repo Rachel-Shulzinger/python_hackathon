@@ -25,6 +25,7 @@ CORS(app)
 @app.route('/process-simulation', methods=['POST'])
 def process_and_forward():
     try:
+        print(f"--- בקשה חדשה התקבלה! נתונים גולמיים: {request.data.decode('utf-8')} ---")
         # 1. קבלת כל ה-JSON שמגיע מה-React
         data = request.json
         if not data:
