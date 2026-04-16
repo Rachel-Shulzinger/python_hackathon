@@ -11,7 +11,7 @@ try:
 except ImportError:
     GENERAL_PROMPT = "חוקי סימולציה כלליים חסרים."
 
-# טעינת משתני סביבה (מפתח API וכתובת שרת היעד)
+# טעינת משתני סביבה (מפתח API)
 load_dotenv()
 
 # הגדרת מפתח ה-API של Gemini
@@ -30,37 +30,27 @@ def process_and_forward():
         if not data:
             return jsonify({"status": "error", "message": "לא התקבלו נתונים בבקשה"}), 400
 
-        # 2. חילוץ בטוח של הנתונים העיקריים לשימוש פנימי (Metadata)
-        # אנחנו משתמשים ב-.get() כדי למנוע קריסה אם שדה מסוים חסר
-        # customer_name = data.get('customerName', 'לקוח')
-        # reason = data.get('reason', 'לא צוין')
-        
-        # 3. בניית ה-Meta-Prompt עבור Gemini
-        # כאן אנחנו שולחים את כל ה-data (כולל שאלות, פוליסה, וכל מה שיש ב-JSON)
-
+        # 2. בניית ה-Meta-Prompt עבור Gemini
         meta_prompt = f"""
-אתה מגלם לקוח בסימולציית שירות של חברת ביטוח. עליך לשלב את חוקי ההתנהגות הכלליים יחד עם הפרטים הספציפיים של התרחיש לכדי זהות אחת מגובשת.
+אתה מומחה להנדסת פרומפטים. עליך ליצור פרומפט מערכת (System Prompt) סופי לסימולציה.
+להלן חוקי הסימולציה הכלליים (הבסיס):
 
-להלן חוקי ההתנהגות והמשוב שאתה חייב לאכוף (אל תשמיט אף סעיף מהמשוב):
-{GENERIC_RULES}
+{GENERAL_PROMPT}
 
-להלן הפרטים האישיים והמקצועיים שלך לשיחה זו (הנתונים הספציפיים):
+להלן נתוני התרחיש הספציפיים שקיבלנו (הטמע אותם בתוך החוקים):
+
 {json.dumps(data, ensure_ascii=False, indent=2)}
 
-הנחיות קריטיות ליצירת הפרומפט הסופי:
-1. שים לב: אתה הלקוח והמשתמש הוא הנציג. עליך לדבר בגוף ראשון כמי שזקוק לעזרה ("אני רוצה", "הפוליסה שלי").
-2. הטמע את כל הנתונים מה-JSON (שמות, מספרים, סוגי פוליסות) כחלק מהידע האישי של הדמות. אל תכתוב "הנתונים הם X", אלא "הפרטים האלו ידועים לך ואתה תמסור אותם רק אם הנציג יבצע אימות כנדרש".
-3. שמור על טון דיבור של לקוח: אל תהיה גנרי. אם בנתונים כתוב שהלקוח כועס או מבולבל - כתוב בפרומפט שהטון שלך חייב להיות כזה לאורך כל השיחה.
-4. אל תשמיט אף כלל מכללי המשוב וה-JSON הסופי. הם חייבים להופיע במלואם בפרומפט המערכת.
-
-צור פרומפט מערכת אחד מלוכד, בגוף שני (הפונה ל-AI שיגלם את הלקוח), ללא הקדמות וללא סימני Markdown.
+המשימה שלך:
+צור פרומפט אחד מלוכד שבו ה-AI יודע בדיוק מי הוא, מה הסיפור שלו ומה החוקים עליהם הוא חייב לשמור.
+החזר אך ורק את הפרומפט הסופי, ללא הקדמות, ללא סימני Markdown (כמו ```) וללא הסברים.
 """
 
-        # 4. הגדרות המודל (טמפרטורה נמוכה לדיוק מקסימלי)
+        # 3. הגדרות המודל (טמפרטורה נמוכה לדיוק מקסימלי)
         generation_config = {
             "temperature": 0.2,
             "top_p": 0.95,
-            "max_output_tokens": 4096, # הגדלתי כדי שיהיה מקום לפרומפט ארוך
+            "max_output_tokens": 4096,
         }
 
         model = genai.GenerativeModel(
@@ -68,7 +58,7 @@ def process_and_forward():
             generation_config=generation_config
         )
 
-        # 5. יצירת הפרומפט המדויק באמצעות Gemini
+        # 4. יצירת הפרומפט המדויק באמצעות Gemini
         response = model.generate_content(meta_prompt)
         
         if not response.text:
@@ -76,20 +66,17 @@ def process_and_forward():
             
         precise_prompt = response.text.strip()
 
-        # 6. בניית האובייקט הסופי למשלוח
+        # 5. בניית האובייקט הסופי למשלוח
         final_payload = {
             "final_prompt": precise_prompt,
             "status": "ready",
             "metadata": {
-                "raw_data_received": data # שומרים את הנתונים המקוריים לגיבוי
+                "raw_data_received": data 
             },
             "generation_response": precise_prompt
         }
 
-        # כאן את יכולה להפעיל את השליחה לשרת הבא במידת הצורך:
-        # requests.post(os.getenv("OTHER_SERVER_URL"), json=final_payload)
-
-        # 7. החזרת התוצאה ל-React
+        # 6. החזרת התוצאה ל-React
         return jsonify({
             "status": "success",
             "message": "The precise prompt has been generated successfully.",
