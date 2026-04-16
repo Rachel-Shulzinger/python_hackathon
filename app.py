@@ -5,14 +5,14 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 
+# טעינת משתני סביבה (מפתח API)
+load_dotenv()
+
 # ייבוא הפרומפט הכללי מהקובץ שלך
 try:
     from general_prompt import GENERIC_RULES as GENERAL_PROMPT
 except ImportError:
     GENERAL_PROMPT = "חוקי סימולציה כלליים חסרים."
-
-# טעינת משתני סביבה (מפתח API)
-load_dotenv()
 
 # הגדרת מפתח ה-API של Gemini
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -32,21 +32,26 @@ def process_and_forward():
 
         # 2. בניית ה-Meta-Prompt עבור Gemini
         meta_prompt = f"""
-אתה מומחה להנדסת פרומפטים. עליך ליצור פרומפט מערכת (System Prompt) סופי לסימולציה.
-להלן חוקי הסימולציה הכלליים (הבסיס):
+אתה סופר-אנליסט של מערכות למידה. המשימה שלך היא ליצור את ה-"SYSTEM PROMPT" האולטימטיבי עבור סימולציית שירות לקוחות.
 
+קריטי: עליך למזג את שני המקורות הבאים ללא איבוד של אף פסיק או הנחיה טכנית.
+
+1. חוקי הברזל והמשוב (חובה להעתיק את כל סעיפי הניקוד וה-JSON):
 {GENERAL_PROMPT}
 
-להלן נתוני התרחיש הספציפיים שקיבלנו (הטמע אותם בתוך החוקים):
-
+2. נתוני הדמות והתרחיש הספציפיים (הטמע אותם כזהות הלקוח):
 {json.dumps(data, ensure_ascii=False, indent=2)}
 
-המשימה שלך:
-צור פרומפט אחד מלוכד שבו ה-AI יודע בדיוק מי הוא, מה הסיפור שלו ומה החוקים עליהם הוא חייב לשמור.
-החזר אך ורק את הפרומפט הסופי, ללא הקדמות, ללא סימני Markdown (כמו ```) וללא הסברים.
+הנחיות מחייבות ליצירת הפרומפט הסופי:
+- איסור השמטה: אל תקצר, אל תסכם ואל תשמיט אף אחד מ-5 שלבי המשוב או כללי ניהול השיחה (כמו פנייה ראשונה ב"שלום" בלבד).
+- זהות אחת: הפרומפט הסופי צריך להיכתב כהנחיה ישירה ל-AI (גוף שני - "אתה הלקוח").
+- שילוב נתונים: הטמע את הפרטים מה-JSON (שם, פוליסה, בעיה) בתוך סעיפי התפקיד של הלקוח.
+- פורמט סיום: ודא שההנחיה להחזיר JSON בסוף השיחה מופיעה בצורה מודגשת וברורה בסוף הפרומפט שאתה מייצר.
+
+החזר אך ורק את טקסט הפרומפט המאוחד, ללא הקדמות, ללא Markdown וללא הערות שוליים.
 """
 
-        # 3. הגדרות המודל (טמפרטורה נמוכה לדיוק מקסימלי)
+        # 3. הגדרות המודל (שימוש ב-Gemini 1.5 Flash)
         generation_config = {
             "temperature": 0.2,
             "top_p": 0.95,
@@ -54,14 +59,14 @@ def process_and_forward():
         }
 
         model = genai.GenerativeModel(
-            model_name="gemini-3-flash-preview",
+            model_name="gemini-1.5-flash",
             generation_config=generation_config
         )
 
         # 4. יצירת הפרומפט המדויק באמצעות Gemini
         response = model.generate_content(meta_prompt)
         
-        if not response.text:
+        if not response or not response.text:
             raise ValueError("הבינה המלאכותית לא הצליחה לייצר תוכן.")
             
         precise_prompt = response.text.strip()
